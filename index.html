@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Tram & Météo</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:Arial,sans-serif;color:#333;background:#f5f7fa;display:flex;flex-direction:column;height:100vh}
+    header{background:#fff;box-shadow:0 2px 5px rgba(0,0,0,0.1);padding:20px;text-align:center}
+    header h1{font-size:2.5rem}
+    #container{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:20px}
+    .module{background:#fff;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.05);padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+    #time{font-size:3rem}
+    #date{font-size:1.5rem;color:#555;margin-top:10px}
+    #weather .icon{width:100px;height:100px}
+    #weather .temp{font-size:2.5rem;margin:10px 0}
+    #trams ul{list-style:none;width:100%}
+    #trams li{padding:10px;border-bottom:1px solid #eee;display:flex;justify-content:space-between}
+    #trams li:last-child{border:none}
+    #trams .line{font-weight:bold}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Dashboard Clermontois</h1>
+    <div id="time"></div>
+    <div id="date"></div>
+  </header>
+  <div id="container">
+    <div id="weather" class="module">
+      <img class="icon" src="" alt="Icone météo">
+      <div class="temp"></div>
+      <div class="desc"></div>
+      <div class="location"></div>
+    </div>
+    <div id="trams" class="module">
+      <h2>Trams : UCA – Campus Centre</h2>
+      <ul></ul>
+    </div>
+  </div>
+
+  <script>
+    // Heure et date
+    function updateTime() {
+      const now = new Date();
+      document.getElementById('time').textContent = now.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
+      document.getElementById('date').textContent = now.toLocaleDateString('fr-FR', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    }
+    setInterval(updateTime,1000);
+    updateTime();
+
+    // Météo
+    const weatherKey = 'API_KEY_WEATHER';
+    const city = 'Clermont-Ferrand,FR';
+    async function updateWeather(){
+      const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&lang=fr&units=metric&appid=${weatherKey}`);
+      const data = await res.json();
+      document.querySelector('#weather .icon').src = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
+      document.querySelector('#weather .temp').textContent = `${Math.round(data.main.temp)}°C`;
+      document.querySelector('#weather .desc').textContent = data.weather[0].description;
+      document.querySelector('#weather .location').textContent = data.name;
+    }
+    updateWeather();
+    setInterval(updateWeather, 600000);
+
+    // Prochains trams
+    const stopId = '3377704015496255'; // **Remplacer** par le stop_id exact
+    async function updateTrams(){
+      const now = new Date().toISOString();
+      const res = await fetch(`https://opendata.clermontmetropole.eu/api/records/1.0/search/?dataset=gtfs-smtc-stop_times&rows=5&sort=departure_time&facet=stop_id&refine.stop_id=${stopId}&timezone=Europe/Paris&start=${now}`);
+      const json = await res.json();
+      const ul = document.querySelector('#trams ul');
+      ul.innerHTML = '';
+      json.records.forEach(r => {
+        const t = r.fields.departure_time;
+        const li = document.createElement('li');
+        li.innerHTML = `<span class="line">${r.fields.route_short_name}</span><span>${t}</span>`;
+        ul.appendChild(li);
+      });
+    }
+    updateTrams();
+    setInterval(updateTrams,60000);
+  </script>
+</body>
+</html>
