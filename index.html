@@ -67,26 +67,35 @@
     // Prochains trams
     const stopId = '3377704015496255'; // **Remplacer** par le stop_id exact
     async function updateTrams(){
-  const url = new URL('https://opendata.clermontmetropole.eu/api/explore/v2.1/catalog/datasets/gtfs-smtc-stop_times/records');
+  const url = new URL(
+    'https://opendata.clermontmetropole.eu/api/explore/v2.1/catalog/datasets/gtfs-smtc/records'
+  );
   url.searchParams.set('limit', '5');
-  url.searchParams.set('order_by', 'fields.departure_time');
-  url.searchParams.set('where', "refine.stop_id='3377704015496255'");
-  
+  url.searchParams.set('order_by', 'fields.stop_times.departure_time');
+  url.searchParams.set(
+    'where',
+    "fields.stop_id='3377704015496255'"
+  );
+
   try {
     const res = await fetch(url);
     const json = await res.json();
+    console.log(json); // utile pour debug
+
     const ul = document.querySelector('#trams ul');
     ul.innerHTML = '';
-    
+
     if (!json.results || json.results.length === 0){
       ul.innerHTML = '<li>Aucun passage prévu</li>';
       return;
     }
 
     json.results.forEach(r => {
-      const t = r.fields.departure_time;
+      const t = r.fields.stop_times.departure_time;
       const li = document.createElement('li');
-      li.innerHTML = `<span class="line">${r.fields.route_short_name}</span><span>${t}</span>`;
+      li.innerHTML = `
+        <span class="line">${r.fields.route_short_name}</span>
+        <span>${t}</span>`;
       ul.appendChild(li);
     });
   } catch (e) {
